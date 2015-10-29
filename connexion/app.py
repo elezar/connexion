@@ -73,17 +73,19 @@ class App:
         self.swagger_url = swagger_url
 
     @staticmethod
-    def common_error_handler(e):
+    def common_error_handler(exception):
         """
-        :type e: Exception
+        :type exception: Exception
         """
-        if not isinstance(e, werkzeug.exceptions.HTTPException):
-            e = werkzeug.exceptions.InternalServerError()
-        return problem(title=e.name, detail=e.description, status=e.code)
+        if not isinstance(exception, werkzeug.exceptions.HTTPException):
+            exception = werkzeug.exceptions.InternalServerError()
+        return problem(title=exception.name, detail=exception.description, status=exception.code)
 
     def add_api(self, swagger_file, base_path=None, arguments=None, swagger_ui=None, swagger_path=None,
                 swagger_url=None):
         """
+        Adds an API to the application based on a swagger file
+
         :param swagger_file: swagger file with the specification
         :type swagger_file: pathlib.Path
         :param base_path: base path where to add this api
@@ -96,6 +98,7 @@ class App:
         :type swagger_path: string | None
         :param swagger_url: URL to access swagger-ui documentation
         :type swagger_url: string | None
+        :rtype: Api
         """
         swagger_ui = swagger_ui if swagger_ui is not None else self.swagger_ui
         swagger_path = swagger_path if swagger_path is not None else self.swagger_path
@@ -108,6 +111,7 @@ class App:
         api = Api(yaml_path, base_path, arguments,
                   swagger_ui, swagger_path, swagger_url)
         self.app.register_blueprint(api.blueprint)
+        return api
 
     def add_error_handler(self, error_code, function):
         """
@@ -208,7 +212,7 @@ class App:
         if debug is not None:
             self.debug = debug
 
-        logger.debug('Starting {} HTTP server..'.format(self.server), extra=vars(self))
+        logger.debug('Starting %s HTTP server..', self.server, extra=vars(self))
         if self.server == 'flask':
             self.app.run('0.0.0.0', port=self.port, debug=self.debug, **options)
         elif self.server == 'tornado':
@@ -221,7 +225,7 @@ class App:
             wsgi_container = tornado.wsgi.WSGIContainer(self.app)
             http_server = tornado.httpserver.HTTPServer(wsgi_container, **options)
             http_server.listen(self.port)
-            logger.info('Listening on port {port}..'.format(port=self.port))
+            logger.info('Listening on port %s..', port=self.port)
             tornado.ioloop.IOLoop.instance().start()
         elif self.server == 'gevent':
             try:
@@ -229,7 +233,7 @@ class App:
             except:
                 raise Exception('gevent library not installed')
             http_server = gevent.wsgi.WSGIServer(('', self.port), self.app, **options)
-            logger.info('Listening on port {port}..'.format(port=self.port))
+            logger.info('Listening on port %s..', self.port)
             http_server.serve_forever()
         else:
-            raise Exception('Server {} not recognized'.format(self.server))
+            raise Exception('Server %s not recognized', self.server)
