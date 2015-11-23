@@ -19,6 +19,7 @@ import werkzeug.exceptions
 
 from .problem import problem
 from .api import Api
+from .utils import get_function_from_name
 
 logger = logging.getLogger('connexion.app')
 
@@ -82,7 +83,7 @@ class App:
         return problem(title=exception.name, detail=exception.description, status=exception.code)
 
     def add_api(self, swagger_file, base_path=None, arguments=None, swagger_ui=None, swagger_path=None,
-                swagger_url=None):
+                swagger_url=None, validate_responses=False, resolver=get_function_from_name):
         """
         Adds an API to the application based on a swagger file
 
@@ -98,6 +99,8 @@ class App:
         :type swagger_path: string | None
         :param swagger_url: URL to access swagger-ui documentation
         :type swagger_url: string | None
+        :param validate_responses: True enables validation. Validation errors generate HTTP 500 responses.
+        :type validate_responses: bool
         :rtype: Api
         """
         swagger_ui = swagger_ui if swagger_ui is not None else self.swagger_ui
@@ -108,8 +111,13 @@ class App:
         arguments = arguments or dict()
         arguments = dict(self.arguments, **arguments)  # copy global arguments and update with api specfic
         yaml_path = self.specification_dir / swagger_file
-        api = Api(yaml_path, base_path, arguments,
-                  swagger_ui, swagger_path, swagger_url)
+        api = Api(swagger_yaml_path=yaml_path,
+                  base_url=base_path, arguments=arguments,
+                  swagger_ui=swagger_ui,
+                  swagger_path=swagger_path,
+                  swagger_url=swagger_url,
+                  resolver=resolver,
+                  validate_responses=validate_responses)
         self.app.register_blueprint(api.blueprint)
         return api
 

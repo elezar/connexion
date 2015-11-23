@@ -13,6 +13,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 import flask
 import jinja2
+import json
 import logging
 import pathlib
 import yaml
@@ -32,7 +33,7 @@ class Api:
     """
 
     def __init__(self, swagger_yaml_path, base_url=None, arguments=None, swagger_ui=None, swagger_path=None,
-                 swagger_url=None):
+                 swagger_url=None, validate_responses=False, resolver=utils.get_function_from_name):
         """
         :type swagger_yaml_path: pathlib.Path
         :type base_url: str | None
@@ -40,6 +41,7 @@ class Api:
         :type swagger_ui: bool
         :type swagger_path: string | None
         :type swagger_url: string | None
+        :param resolver: Callable that maps operationID to a function
         """
         self.swagger_yaml_path = pathlib.Path(swagger_yaml_path)
         logger.debug('Loading specification: %s', swagger_yaml_path, extra={'swagger_yaml': swagger_yaml_path,
@@ -57,7 +59,6 @@ class Api:
         logger.debug('Read specification', extra=self.specification)
 
         # https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#fixed-fields
-        # TODO Validate yaml
         # If base_url is not on provided then we try to read it from the swagger.yaml or use / by default
         if base_url is None:
             self.base_url = self.specification.get('basePath', '')  # type: dict
@@ -78,6 +79,11 @@ class Api:
 
         self.swagger_path = swagger_path or SWAGGER_UI_PATH
         self.swagger_url = swagger_url or SWAGGER_UI_URL
+
+        self.resolver = resolver
+
+        logger.debug('Validate Responses: %s', str(validate_responses))
+        self.validate_responses = validate_responses
 
         # Create blueprint and endpoints
         self.blueprint = self.create_blueprint()
@@ -107,7 +113,8 @@ class Api:
         operation = Operation(method=method, path=path, operation=swagger_operation,
                               app_produces=self.produces, app_security=self.security,
                               security_definitions=self.security_definitions, definitions=self.definitions,
-                              parameter_definitions=self.parameter_definitions)
+                              parameter_definitions=self.parameter_definitions,
+                              validate_responses=self.validate_responses, resolver=self.resolver)
         operation_id = operation.operation_id
         logger.debug('... Adding %s -> %s', method.upper(), operation_id, extra=vars(operation))
 
@@ -136,7 +143,7 @@ class Api:
         """
         logger.debug('Adding swagger.json: %s/swagger.json', self.base_url)
         endpoint_name = "{name}_swagger_json".format(name=self.blueprint.name)
-        self.blueprint.add_url_rule('/swagger.json', endpoint_name, lambda: flask.jsonify(self.specification))
+        self.blueprint.add_url_rule('/swagger.json', endpoint_name, lambda: json.dumps(self.specification))
 
     def add_swagger_ui(self):
         """

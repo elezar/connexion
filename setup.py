@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import platform
 import sys
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-version = '0.12.0'
+
+def read_version(package):
+    with open(os.path.join(package, '__init__.py'), 'r') as fd:
+        for line in fd:
+            if line.startswith('__version__ = '):
+                return line.split()[-1].strip().strip("'")
+
+version = read_version('connexion')
+
 py_major_version, py_minor_version, _ = (int(v.rstrip('+')) for v in platform.python_version_tuple())
 
 requires = ['flask', 'PyYAML', 'requests', 'six', 'strict-rfc3339']
@@ -17,15 +26,19 @@ if py_major_version == 2 or (py_major_version == 3 and py_minor_version < 4):
 
 
 class PyTest(TestCommand):
+
+    user_options = [('cov-html=', None, 'Generate junit html report')]
+
     def initialize_options(self):
         TestCommand.initialize_options(self)
         self.cov = None
         self.pytest_args = ['--cov', 'connexion', '--cov-report', 'term-missing']
+        self.cov_html = False
 
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
+        if self.cov_html:
+            self.pytest_args.extend(['--cov-report', 'html'])
 
     def run_tests(self):
         import pytest
@@ -44,14 +57,17 @@ setup(
     url='https://github.com/zalando/connexion',
     keywords='swagger rest api oauth flask microservice framework',
     license='Apache License Version 2.0',
+    setup_requires=['flake8'],
     install_requires=requires,
     tests_require=['pytest-cov', 'pytest', 'mock'],
     cmdclass={'test': PyTest},
+    test_suite='tests',
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
-        'Development Status :: 4 - Beta',
+        'Programming Language :: Python :: 3.5',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
     ],

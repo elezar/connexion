@@ -32,7 +32,7 @@ in YAML.
 How to use
 ----------
 
-Put your API YAML inside a folder in the root path of your application (e.g ``swagger\``) and then do
+Put your API YAML inside a folder in the root path of your application (e.g ``swagger/``) and then do
 
 .. code-block:: python
 
@@ -42,26 +42,27 @@ Put your API YAML inside a folder in the root path of your application (e.g ``sw
     app.add_api('my_api.yaml')
     app.run(port=8080)
 
+See the `Connexion Pet Store Example Application`_ for details.
 
-Parametrization
----------------
-Connexion uses Jinja2_ to allow the parametrization of specifications.
+Parameterization
+----------------
+Connexion uses Jinja2_ to allow the parameterization of specifications.
 
-The specification arguments can be defined globally for the application or for each specific api:
+The specification arguments can be defined globally for the application or for each specific API:
 
 .. code-block:: python
 
     app = connexion.App(__name__, specification_dir='swagger/', arguments={'global': 'global_value'})
     app.add_api('my_api.yaml', arguments={'api_local': 'local_value'})
-    app.run(port = 8080)
+    app.run(port=8080)
 
-If a value is provided both globally and on the api then the api value will take precedence.
+If a value is provided both globally and on the API then the API value will take precedence.
 
 
 Endpoint Routing
 ----------------
 Connexion uses the ``OperationId`` from each `Operation Object`_  to identify which function
-should handle each url.
+should handle each URL.
 
 For example:
 
@@ -105,18 +106,18 @@ If the specification includes a Oauth2 `Security Definition <swager.spec.securit
 Zalando Greendale Team's infrastructure connexion will automatically handle token validation and authorization for
 operations that have `Security Requirements <swager.spec.security_requirement_>`_. One main difference between the usual
 Oauth flow and the one connexion uses is that the API Security Definition **must** include a 'x-tokenInfoUrl' with the
-url to use to validate and get the token information.
+URL to use to validate and get the token information.
 Connexion expects to receive the Oauth token in the ``Authorization`` header field in the format described in
 `RFC 6750 <rfc6750_>`_ section 2.1.
 
-Swagger Json
+Swagger JSON
 ------------
-Connexion makes the Swagger specification in json format available from ``swagger.json`` in the base path of the api.
+Connexion makes the Swagger specification in JSON format available from ``swagger.json`` in the base path of the API.
 
 Swagger UI
 ----------
 The Swagger UI for an API is available, by default, in ``{base_path}/ui/`` where ``base_path`` is the base path of the
-api.
+API.
 
 You can disable the swagger ui either at application level:
 
@@ -126,7 +127,7 @@ You can disable the swagger ui either at application level:
     app.add_api('my_api.yaml')
 
 
-You can also disable it at api level:
+You can also disable it at API level:
 
 .. code-block:: python
 
