@@ -56,6 +56,12 @@ def app():
     return app
 
 
+def test_add_api_with_function_resolver_function_is_wrapped():
+    app = App(__name__, specification_dir=SPEC_FOLDER)
+    api = app.add_api('api.yaml', resolver=lambda oid: (lambda foo: 'bar'))
+    assert api.resolver.resolve_function_from_operation_id('faux')('bah') == 'bar'
+
+
 def test_app_with_relative_path():
     # Create the app with a realative path and run the test_app testcase below.
     app = App(__name__, 5001, SPEC_FOLDER.relative_to(TEST_FOLDER),
@@ -511,3 +517,36 @@ def test_test_schema_int(app):
     assert array_request.content_type == 'application/json'
     array_response = json.loads(array_request.data.decode())  # type: list
     assert array_response == 42
+
+
+def test_resolve_method(app):
+    app_client = app.app.test_client()
+    resp = app_client.get('/v1.0/resolver-test/method')  # type: flask.Response
+    assert resp.data.decode() == '"DummyClass"'
+
+
+def test_resolve_classmethod(app):
+    app_client = app.app.test_client()
+    resp = app_client.get('/v1.0/resolver-test/classmethod')  # type: flask.Response
+    assert resp.data.decode() == '"DummyClass"'
+
+
+def test_path_parameter_someint(app):
+    app_client = app.app.test_client()
+    resp = app_client.get('/v1.0/test-int-path/123')  # type: flask.Response
+    assert resp.data.decode() == '"int"'
+
+    # non-integer values will not match Flask route
+    resp = app_client.get('/v1.0/test-int-path/foo')  # type: flask.Response
+    assert resp.status_code == 404
+
+
+def test_path_parameter_somefloat(app):
+    app_client = app.app.test_client()
+    resp = app_client.get('/v1.0/test-float-path/123.45')  # type: flask.Response
+    assert resp.data.decode() == '"float"'
+
+    # non-float values will not match Flask route
+    resp = app_client.get('/v1.0/test-float-path/123,45')  # type: flask.Response
+    assert resp.status_code == 404
+

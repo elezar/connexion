@@ -19,9 +19,10 @@ import pathlib
 import yaml
 from .operation import Operation
 from . import utils
+from . import resolver
 
 MODULE_PATH = pathlib.Path(__file__).absolute().parent
-SWAGGER_UI_PATH = MODULE_PATH / 'swagger-ui'
+SWAGGER_UI_PATH = MODULE_PATH / 'vendor' / 'swagger-ui'
 SWAGGER_UI_URL = 'ui'
 
 logger = logging.getLogger('connexion.api')
@@ -33,7 +34,7 @@ class Api:
     """
 
     def __init__(self, swagger_yaml_path, base_url=None, arguments=None, swagger_ui=None, swagger_path=None,
-                 swagger_url=None, validate_responses=False, resolver=utils.get_function_from_name):
+                 swagger_url=None, validate_responses=False, resolver=resolver.Resolver()):
         """
         :type swagger_yaml_path: pathlib.Path
         :type base_url: str | None
@@ -110,15 +111,15 @@ class Api:
         :type path: str
         :type swagger_operation: dict
         """
-        operation = Operation(method=method, path=path, operation=swagger_operation,
-                              app_produces=self.produces, app_security=self.security,
-                              security_definitions=self.security_definitions, definitions=self.definitions,
-                              parameter_definitions=self.parameter_definitions,
+        operation = Operation(method=method, path=path, operation=swagger_operation, app_produces=self.produces,
+                              app_security=self.security, security_definitions=self.security_definitions,
+                              definitions=self.definitions, parameter_definitions=self.parameter_definitions,
                               validate_responses=self.validate_responses, resolver=self.resolver)
         operation_id = operation.operation_id
         logger.debug('... Adding %s -> %s', method.upper(), operation_id, extra=vars(operation))
 
-        self.blueprint.add_url_rule(path, operation.endpoint_name, operation.function, methods=[method])
+        flask_path = utils.flaskify_path(path, operation.get_path_parameter_types())
+        self.blueprint.add_url_rule(flask_path, operation.endpoint_name, operation.function, methods=[method])
 
     def add_paths(self, paths=None):
         """
@@ -129,7 +130,6 @@ class Api:
         paths = paths or self.specification.get('paths', dict())
         for path, methods in paths.items():
             logger.debug('Adding %s%s...', self.base_url, path)
-            path = utils.flaskify_path(path)
             # TODO Error handling
             for method, endpoint in methods.items():
                 try:

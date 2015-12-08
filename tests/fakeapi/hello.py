@@ -4,6 +4,28 @@ from connexion import problem, request
 from connexion import NoContent
 
 
+class DummyClass:
+    @classmethod
+    def test_classmethod(cls):
+        return cls.__name__
+
+    def test_method(self):
+        return self.__class__.__name__
+
+class_instance = DummyClass()
+
+def get():
+    return ''
+
+def search():
+    return ''
+
+def list():
+    return ''
+
+def post():
+    return ''
+
 def post_greeting(name):
     data = {'greeting': 'Hello {name}'.format(name=name)}
     return data
@@ -172,3 +194,11 @@ def test_schema_array(test_array):
 
 def test_schema_int(test_int):
     return test_int
+
+
+def test_get_someint(someint):
+    return type(someint).__name__
+
+
+def test_get_somefloat(somefloat):
+    return type(somefloat).__name__
